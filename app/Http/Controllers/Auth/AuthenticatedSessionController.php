@@ -28,19 +28,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if($request->user()->level === 'admin'){
-            return redirect()->route('approval.index');
-        };
-
-        if($request->user()->level === 'librarian'){
-            return redirect()->route('books.index');
-        };
-
-        if($request->user()->level === 'lecturer'){
-            return redirect()->route('lecturerBorrow.index');
-        };
-
-        return redirect()->intended(route('studentBorrow.index'));
+        if (Auth::user()->role == 'admin') {
+            return redirect()->route('admin.dashboard'); // Redirect to admin dashboard
+        } elseif (Auth::user()->role == 'librarian') {
+            return redirect()->route('librarian.dashboard'); // Redirect to librarian dashboard
+        } elseif (Auth::user()->role == 'student') {
+            return redirect()->route('student.dashboard'); // Redirect to student dashboard (or home)
+        } else {
+            return redirect()->route('lecturer.dashboard'); // Redirect to student dashboard (or home)
+        }
     }
 
     /**

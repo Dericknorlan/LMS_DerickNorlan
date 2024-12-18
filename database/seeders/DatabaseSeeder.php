@@ -15,29 +15,12 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@gmail.com',
-            'password' => '12345678',
-            'level' => 'admin',
-        ]);
-        User::factory()->create([
-            'name' => 'Librarian',
-            'email' => 'librarian@gmail.com',
-            'password' => '12345678',
-            'level' => 'librarian',
-        ]);
-        User::factory()->create([
-            'name' => 'Student',
-            'email' => 'student@gmail.com',
-            'password' => '12345678',
-            'level' => 'student',
-        ]);
-        User::factory()->create([
-            'name' => 'Lecturer',
-            'email' => 'lecturer@gmail.com',
-            'password' => '12345678',
-            'level' => 'lecturer',
+        $this->call([
+            BooksSeeder::class,
+            JournalSeeder::class,
+            CDSeeder::class,
+            NewspaperSeeder::class,
+            FinalYearProjectSeeder::class,
         ]);
     }
 }

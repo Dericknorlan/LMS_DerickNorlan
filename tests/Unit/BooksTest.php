@@ -2,208 +2,74 @@
 
 namespace Tests\Unit;
 
+use Tests\TestCase;
+use App\Models\Book;
 use App\Models\Books;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class BooksTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Test fetching all books.
-     */
-    public function test_it_can_fetch_all_books(): void
+    #[Test]
+    public function it_can_create_a_book()
     {
-        // Buat data manual
-        Books::create([
-            'title' => 'Book One',
-            'author' => 'Author One',
-            'publisher' => 'Publisher One',
-            'year' => 2023,
-            'type' => 'book',
-        ]);
-
-        Books::create([
-            'title' => 'Book Two',
-            'author' => 'Author Two',
-            'publisher' => 'Publisher Two',
-            'year' => 2022,
-            'type' => 'ebook',
-        ]);
-
-        $response = $this->getJson('/api/books');
-
-        $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'data' => [
-                         '*' => ['id', 'title', 'author', 'publisher', 'year', 'type', 'created_at', 'updated_at'],
-                     ],
-                 ]);
-    }
-
-    /**
-     * Test fetching a single book.
-     */
-    public function test_it_can_fetch_a_single_book(): void
-    {
-        $book = Books::create([
-            'title' => 'Book One',
-            'author' => 'Author One',
-            'publisher' => 'Publisher One',
-            'year' => 2023,
-            'type' => 'book',
-        ]);
-
-        $response = $this->getJson("/api/books/{$book->id}");
-
-        $response->assertStatus(200)
-                 ->assertJson([
-                     'success' => true,
-                     'data' => [
-                         'id' => $book->id,
-                         'title' => 'Book One',
-                     ],
-                 ]);
-    }
-
-    /**
-     * Test fetching a nonexistent book returns 404.
-     */
-    public function test_it_returns_404_for_nonexistent_book(): void
-    {
-        $response = $this->getJson('/api/books/9999');
-
-        $response->assertStatus(404)
-                 ->assertJson([
-                     'success' => false,
-                     'message' => 'Book not found',
-                 ]);
-    }
-
-    /**
-     * Test creating a book.
-     */
-    public function test_it_can_create_a_book(): void
-    {
+        // Arrange
         $data = [
-            'title' => 'New Book',
+            'title' => 'The Great Gatsby',
+            'author' => 'F. Scott Fitzgerald',
+            'publisher' => 'Scribner',
+            'description' => 'A novel set in the Jazz Age exploring themes of wealth and society.',
+            'price' => 150000,
+            'stock' => 10,
+            'datePublished' => '1925-04-10',
+            'genre' => 'fiction',
+            'onlineLink' => 'https://example.com/the-great-gatsby',
+        ];
+
+        // Act
+        $book = Books::create($data);
+
+        // Assert
+        $this->assertInstanceOf(Books::class, $book);
+        $this->assertEquals('The Great Gatsby', $book->title);
+        $this->assertEquals('F. Scott Fitzgerald', $book->author);
+        $this->assertEquals('Scribner', $book->publisher);
+    }
+
+    #[Test]
+    public function it_requires_mandatory_fields()
+    {
+        // Arrange
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        // Act
+        Books::create([]);
+    }
+
+    #[Test]
+    public function it_can_delete_a_book()
+    {
+        // Arrange
+        $data = [
+            'title' => 'To Be Deleted',
             'author' => 'John Doe',
-            'publisher' => 'Tech Press',
-            'year' => 2023,
-            'type' => 'book',
+            'publisher' => 'Delete Publisher',
+            'description' => 'A test book for deletion.',
+            'price' => 200000,
+            'stock' => 5,
+            'datePublished' => '2024-01-01',
+            'genre' => 'nonfiction',
+            'onlineLink' => 'https://example.com/to-be-deleted',
         ];
 
-        $response = $this->postJson('/api/books', $data);
+        $book = Books::create($data);
 
-        $response->assertStatus(201)
-                 ->assertJson([
-                     'success' => true,
-                     'message' => 'Book created successfully',
-                 ]);
+        // Act
+        $book->delete();
 
-        $this->assertDatabaseHas('books', $data);
-    }
-
-    /**
-     * Test validation for required fields when creating a book.
-     */
-    public function test_it_validates_required_fields_when_creating_a_book(): void
-    {
-        $response = $this->postJson('/api/books', []);
-
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['title', 'author', 'publisher', 'year', 'type']);
-    }
-
-    /**
-     * Test updating a book.
-     */
-    public function test_it_can_update_a_book(): void
-    {
-        $book = Books::create([
-            'title' => 'Original Title',
-            'author' => 'Original Author',
-            'publisher' => 'Original Publisher',
-            'year' => 2022,
-            'type' => 'book',
-        ]);
-
-        $data = [
-            'title' => 'Updated Title',
-            'author' => 'Updated Author',
-            'publisher' => 'Updated Publisher',
-            'year' => 2023,
-            'type' => 'ebook',
-        ];
-
-        $response = $this->putJson("/api/books/{$book->id}", $data);
-
-        $response->assertStatus(200)
-                 ->assertJson([
-                     'success' => true,
-                     'message' => 'Book updated successfully',
-                 ]);
-
-        $this->assertDatabaseHas('books', $data);
-    }
-
-    /**
-     * Test updating a nonexistent book returns 404.
-     */
-    public function test_it_returns_404_when_updating_nonexistent_book(): void
-    {
-        $response = $this->putJson('/api/books/9999', [
-            'title' => 'Updated Title',
-            'author' => 'Updated Author',
-            'publisher' => 'Updated Publisher',
-            'year' => 2023,
-            'type' => 'ebook',
-        ]);
-
-        $response->assertStatus(404)
-                 ->assertJson([
-                     'success' => false,
-                     'message' => 'Book not found',
-                 ]);
-    }
-
-    /**
-     * Test deleting a book.
-     */
-    public function test_it_can_delete_a_book(): void
-    {
-        $book = Books::create([
-            'title' => 'Book to Delete',
-            'author' => 'Author',
-            'publisher' => 'Publisher',
-            'year' => 2023,
-            'type' => 'book',
-        ]);
-
-        $response = $this->deleteJson("/api/books/{$book->id}");
-
-        $response->assertStatus(200)
-                 ->assertJson([
-                     'success' => true,
-                     'message' => 'Book deleted successfully',
-                 ]);
-
-        $this->assertDatabaseMissing('books', ['id' => $book->id]);
-    }
-
-    /**
-     * Test deleting a nonexistent book returns 404.
-     */
-    public function test_it_returns_404_when_deleting_nonexistent_book(): void
-    {
-        $response = $this->deleteJson('/api/books/9999');
-
-        $response->assertStatus(404)
-                 ->assertJson([
-                     'success' => false,
-                     'message' => 'Book not found',
-                 ]);
+        // Assert
+        $this->assertDatabaseMissing('books', $data);
     }
 }

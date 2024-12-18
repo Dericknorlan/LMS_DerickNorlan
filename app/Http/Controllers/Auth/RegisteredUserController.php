@@ -29,22 +29,38 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
-
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => $request->role,
         ]);
 
-        event(new Registered($user));
+    // return redirect(RouteServiceProvider::HOME);
 
-        Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+    $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
+
+    if (Auth::attempt($request->only('email', 'password'))) {
+        $user = Auth::user();
+        
+        // Custom redirection logic based on user role
+        if ($user->role == 'admin') {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->role == 'librarian') {
+            return redirect()->route('librarian.dashboard');
+        } elseif ($user->role == 'student') {
+            return redirect()->route('student.dashboard'); // Assuming there's a student dashboard
+        } else {
+            return redirect()->route('lecturer.dashboard'); // Assuming there's a student dashboard
+        }
+    }
+
+    return back()->withErrors([
+        'email' => 'The provided credentials do not match our records.',
+    ]);
     }
 }
